@@ -8,7 +8,7 @@ WSGI_FILE="app"
 source $VENV_DIR/bin/activate
 
 echo "启动 Gunicorn 服务器..."
-gunicorn -w $GUNICORN_WORKERS -b 0.0.0.0:$GUNICORN_PORT $WSGI_FILE:app &
+nohup gunicorn -w $GUNICORN_WORKERS -b 0.0.0.0:$GUNICORN_PORT $WSGI_FILE:app &
 
 # 获取 Gunicorn 进程 ID
 GUNICORN_PID=$!
