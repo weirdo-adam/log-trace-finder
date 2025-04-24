@@ -17,7 +17,14 @@ clickhouse_client = clickhouse_connect.get_client(
     database=os.getenv("CLICKHOUSE_DATABASE", "otel"),
 )
 
-query_log_columns = ["timestamp", "body", "level", "labels", "traceID"]
+query_log_columns = [
+    "serviceName",
+    "timestamp",
+    "body",
+    "level",
+    "labels",
+    "traceID",
+]
 
 
 @app.route("/", methods=["GET", "POST"])
@@ -31,6 +38,7 @@ def index():
     if trace_id:
         query = """
         SELECT
+            ServiceName as "serviceName",
             Timestamp as "timestamp",
             Body as "body",
             SeverityText as "level",
@@ -38,7 +46,7 @@ def index():
             TraceId as "traceID"
         FROM "otel"."otel_logs"
         WHERE LogAttributes['trace_id'] = %(trace_id)s
-          and (timestamp >= now() - toIntervalHour(1) AND timestamp <= now())
+          and (timestamp >= now() - toIntervalHour(24) AND timestamp <= now())
         ORDER BY timestamp DESC
         LIMIT 1000
         """

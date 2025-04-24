@@ -14,11 +14,11 @@
 
                 if (body.classList.contains("collapsed")) {
                     body.classList.remove("collapsed");
-                    button.textContent = "折叠内容";
+                    button.textContent = "折叠日志内容";
                     button.classList.add("expanded");
                 } else {
                     body.classList.add("collapsed");
-                    button.textContent = "展开内容";
+                    button.textContent = "展开日志内容";
                     button.classList.remove("expanded");
                 }
             }
@@ -29,11 +29,11 @@
 
                 if (labels.classList.contains("collapsed")) {
                     labels.classList.remove("collapsed");
-                    button.textContent = "折叠标签";
+                    button.textContent = "折叠日志字段";
                     button.classList.add("expanded");
                 } else {
                     labels.classList.add("collapsed");
-                    button.textContent = "展开标签";
+                    button.textContent = "展开日志字段";
                     button.classList.remove("expanded");
                 }
             }
@@ -42,19 +42,13 @@
             document.addEventListener("DOMContentLoaded", function () {
                 const logBodies = document.querySelectorAll(".log-body");
                 const logLabels = document.querySelectorAll(".log-labels");
-                const labelButtons = document.querySelectorAll(".labels-btn");
                 logBodies.forEach((body) => {
                     body.classList.add("collapsed");
                 });
 
                 logLabels.forEach((labels) => {
-                    labels.classList.remove("collapsed");
+                    labels.classList.add("collapsed");
                 });
-
-                labelButtons.forEach((button) => {
-                       button.textContent = "折叠标签";  // 因为标签是展开的，所以按钮文字显示"折叠标签"
-                       button.classList.add("expanded");  // 添加 expanded 类
-                   });
 
                 // 处理时间戳
                 const timestamps = document.querySelectorAll(
@@ -111,6 +105,10 @@
                                         class="level level-{{ log.level|lower }}"
                                         >{{ log.level }}</span
                                     >
+                                    <span
+                                        class="level level-{{ log.level|lower }}"
+                                        >{{ log.serviceName }}</span
+                                    >
                                 </div>
                                 <div class="log-actions">
                                     <button
@@ -118,7 +116,7 @@
                                         id="btn-log-{{ loop.index }}"
                                         onclick="toggleLogBody('log-{{ loop.index }}')"
                                     >
-                                        展开内容
+                                        展开日志内容
                                     </button>
                                     {% if log.labels %}
                                     <button
@@ -126,7 +124,7 @@
                                         id="btn-labels-{{ loop.index }}"
                                         onclick="toggleLabels('labels-{{ loop.index }}')"
                                     >
-                                        展开标签
+                                        展开日志字段
                                     </button>
                                     {% endif %}
                                 </div>
