@@ -36,4 +36,5 @@ else
     echo "未找到 $REQUIREMENTS 文件，将安装 Flask 和 Gunicorn"
     pip install flask gunicorn
 fi
+pip install gunicorn
 echo "环境初始化完成!"
