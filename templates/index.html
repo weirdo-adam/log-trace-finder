@@ -1,0 +1,189 @@
+<!doctype html>
+<html>
+    <head>
+        <title>LogTraceFinder - 日志追踪查询自助工具</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <link rel="stylesheet" href="/static/style.css" />
+        <script>
+            function formatTimestamp(timestamp) {
+                return timestamp.slice(0, 23); // 只保留到微秒
+            }
+            function toggleLogBody(id) {
+                const body = document.getElementById(id);
+                const button = document.getElementById("btn-" + id);
+
+                if (body.classList.contains("collapsed")) {
+                    body.classList.remove("collapsed");
+                    button.textContent = "折叠内容";
+                    button.classList.add("expanded");
+                } else {
+                    body.classList.add("collapsed");
+                    button.textContent = "展开内容";
+                    button.classList.remove("expanded");
+                }
+            }
+
+            function toggleLabels(id) {
+                const labels = document.getElementById(id);
+                const button = document.getElementById("btn-" + id);
+
+                if (labels.classList.contains("collapsed")) {
+                    labels.classList.remove("collapsed");
+                    button.textContent = "折叠标签";
+                    button.classList.add("expanded");
+                } else {
+                    labels.classList.add("collapsed");
+                    button.textContent = "展开标签";
+                    button.classList.remove("expanded");
+                }
+            }
+
+            // 页面加载时自动折叠所有日志内容和标签
+            document.addEventListener("DOMContentLoaded", function () {
+                const logBodies = document.querySelectorAll(".log-body");
+                const logLabels = document.querySelectorAll(".log-labels");
+                const labelButtons = document.querySelectorAll(".labels-btn");
+                logBodies.forEach((body) => {
+                    body.classList.add("collapsed");
+                });
+
+                logLabels.forEach((labels) => {
+                    labels.classList.remove("collapsed");
+                });
+
+                labelButtons.forEach((button) => {
+                       button.textContent = "折叠标签";  // 因为标签是展开的，所以按钮文字显示"折叠标签"
+                       button.classList.add("expanded");  // 添加 expanded 类
+                   });
+
+                // 处理时间戳
+                const timestamps = document.querySelectorAll(
+                    ".timeline-timestamp",
+                );
+                timestamps.forEach(function (element) {
+                    const originalTime = element.textContent.trim();
+                    element.textContent = formatTimestamp(originalTime);
+                    // 添加完整时间戳作为悬停提示
+                    element.title = originalTime;
+                });
+            });
+        </script>
+    </head>
+    <body>
+        <div class="container">
+            <header class="header">
+                <h1>LogTraceFinder</h1>
+                <p class="subtitle">通过TraceID查询相关日志</p>
+            </header>
+
+            <form method="POST" class="search-form">
+                <div class="search-box">
+                    <input
+                        type="text"
+                        name="trace_id"
+                        value="{{ trace_id }}"
+                        placeholder="输入TraceID"
+                        required
+                    />
+                    <button type="submit">查询</button>
+                </div>
+            </form>
+
+            <div class="results">
+                {% if logs %}
+                <div class="results-header">
+                    <h2>查询结果</h2>
+                    <p class="result-count">
+                        共找到 {{ logs|length }} 条日志记录
+                    </p>
+                </div>
+
+                <div class="timeline">
+                    {% for log in logs %}
+                    <div class="timeline-entry">
+                        <span class="timeline-timestamp"
+                            >{{ log.timestamp }}</span
+                        >
+                        <div class="log-entry level-{{ log.level|lower }}">
+                            <div class="log-header">
+                                <div class="log-meta">
+                                    <span
+                                        class="level level-{{ log.level|lower }}"
+                                        >{{ log.level }}</span
+                                    >
+                                </div>
+                                <div class="log-actions">
+                                    <button
+                                        class="toggle-btn"
+                                        id="btn-log-{{ loop.index }}"
+                                        onclick="toggleLogBody('log-{{ loop.index }}')"
+                                    >
+                                        展开内容
+                                    </button>
+                                    {% if log.labels %}
+                                    <button
+                                        class="toggle-btn labels-btn"
+                                        id="btn-labels-{{ loop.index }}"
+                                        onclick="toggleLabels('labels-{{ loop.index }}')"
+                                    >
+                                        展开标签
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <!-- 可折叠的标签区域 -->
+                            {% if log.labels %}
+                            <div
+                                id="labels-{{ loop.index }}"
+                                class="log-labels collapsed"
+                            >
+                                <div class="labels-container">
+                                    {% for key, value in log.labels.items() %}
+                                    <div class="label-row">
+                                        <span class="label-key"
+                                            >{{ key }}:</span
+                                        >
+                                        <span class="label-value"
+                                            >{{ value }}</span
+                                        >
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endif %}
+
+                            <!-- 日志内容区域 -->
+                            <div
+                                id="log-{{ loop.index }}"
+                                class="log-body collapsed"
+                            >
+                                {% if log.body is string %}
+                                <pre>{{ log.body }}</pre>
+                                {% else %}
+                                <pre>{{ log.body|tojson(indent=2) }}</pre>
+                                {% endif %}
+                            </div>
+
+                            <!-- 更突出的TraceID显示 -->
+                            <div class="log-footer">
+                                <div class="trace-id-highlight">
+                                    <span class="trace-id-label">追踪ID:</span>
+                                    <span class="trace-id"
+                                        >{{ log.traceID }}</span
+                                    >
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="no-results">
+                    <p>没有找到日志记录，请尝试其他TraceID</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </body>
+</html>
