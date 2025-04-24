@@ -2,7 +2,7 @@
 
 # 定义变量
 APP_NAME="log-trace-finder-app"
-VENV_DIR="venv"
+VENV_DIR=".venv"
 REQUIREMENTS="requirements.txt"
 
 echo "开始部署应用: $APP_NAME"

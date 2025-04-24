@@ -1,6 +1,6 @@
 #!/bin/bash
 
-VENV_DIR="venv"
+VENV_DIR=".venv"
 GUNICORN_WORKERS=4
 GUNICORN_PORT=8000
 WSGI_FILE="app"
