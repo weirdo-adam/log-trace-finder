@@ -4,14 +4,11 @@
 
 ## 启动
 
-创建.env文件
+创建配置文件
 
-```env
-CLICKHOUSE_HOST=127.0.0.1
-CLICKHOUSE_PORT=8123
-CLICKHOUSE_USER=default
-CLICKHOUSE_PASSWORD=
-CLICKHOUSE_DATABASE=otel
+```bash
+cp .env-example .env
+vim .env
 ```
 
 初始化环境
