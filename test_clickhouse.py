@@ -23,7 +23,7 @@ def query(trace_id):
             SeverityText as "level",
             LogAttributes as "labels",
             TraceId as "traceID"
-        FROM "otel_dev"."otel_logs"
+        FROM otel_logs
         WHERE LogAttributes['trace_id'] = %(trace_id)s
           and (timestamp >= now() - toIntervalHour(1) AND timestamp <= now())
         ORDER BY timestamp DESC
