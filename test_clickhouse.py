@@ -23,7 +23,7 @@ def query(trace_id):
             SeverityText as "level",
             LogAttributes as "labels",
             TraceId as "traceID"
-        FROM "otel"."otel_logs"
+        FROM "otel_dev"."otel_logs"
         WHERE LogAttributes['trace_id'] = %(trace_id)s
           and (timestamp >= now() - toIntervalHour(1) AND timestamp <= now())
         ORDER BY timestamp DESC
@@ -35,7 +35,7 @@ def query(trace_id):
 
 
 if __name__ == "__main__":
-    trace_id = "1ac9ecf3a76093af29b711397d19fdae"
+    trace_id = "d456d9d0af1d055137073033fdddb559"
     query_results = query(trace_id)
     columns = ["timestamp", "body", "level", "labels", "traceID"]
     logs = [dict(zip(columns, row)) for row in query_results]
