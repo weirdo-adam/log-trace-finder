@@ -136,9 +136,7 @@ def search():
 
     # Build final query
     query += "".join(query_conditions)
-    query += (
-        " ORDER BY `ServiceName`,`TimestampTime`,`Timestamp` DESC LIMIT 100"
-    )
+    query += " ORDER BY ServiceName DESC, TimestampTime DESC LIMIT 1000"
 
     # print("Final Query:", query)
     # print("Parameters:", parameters)
