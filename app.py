@@ -1,5 +1,6 @@
 import os
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 import clickhouse_connect
 from dotenv import load_dotenv
@@ -26,6 +27,20 @@ query_log_columns = [
     "labels",
     "traceID",
 ]
+
+
+def convert_to_utc_timestamp(time_str):
+    # 1. 解析成 naive datetime（无时区）
+    dt_naive = datetime.strptime(time_str, "%Y-%m-%d %H:%M:%S")
+
+    # 2. 手动加上 UTC+8 时区（如 Asia/Shanghai）
+    dt_utc8 = dt_naive.replace(tzinfo=ZoneInfo("Asia/Shanghai"))
+
+    # 3. 转换成 UTC（0 时区）
+    dt_utc = dt_utc8.astimezone(ZoneInfo("UTC"))
+
+    # 4. 返回时间戳
+    return dt_utc.timestamp()
 
 
 @app.route("/", methods=["GET"])
@@ -77,10 +92,8 @@ def search():
     if start_time and end_time:
         try:
             # Convert to ClickHouse compatible format
-            start_dt = datetime.strptime(
-                start_time, "%Y-%m-%dT%H:%M"
-            ).timestamp()
-            end_dt = datetime.strptime(end_time, "%Y-%m-%dT%H:%M").timestamp()
+            start_dt = convert_to_utc_timestamp(start_time)
+            end_dt = convert_to_utc_timestamp(end_time)
 
             query_conditions.append(
                 " AND (timestamp >= toDateTime(%(start_time)s) AND timestamp <= toDateTime(%(end_time)s))"
