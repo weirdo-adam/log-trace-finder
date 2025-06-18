@@ -101,7 +101,7 @@ def search():
 
     # Add other conditions if provided
     if trace_id:
-        query_conditions.append(" AND LogAttributes['trace_id'] = %(trace_id)s")
+        query_conditions.append(" AND TraceId = %(trace_id)s")
         parameters["trace_id"] = trace_id
 
     if company_id:
