@@ -4,9 +4,111 @@
         <title>LogTraceFinder - 日志追踪查询自助工具</title>
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <link rel="stylesheet" href="/static/style.css" />
+        <style>
+            /* 新增的样式部分 */
+            .search-conditions {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+                gap: 16px;
+                margin-bottom: 20px;
+            }
+
+            .search-group {
+                display: flex;
+                flex-direction: column;
+            }
+
+            .search-group label {
+                margin-bottom: 6px;
+                font-weight: 500;
+                color: #555;
+                font-size: 14px;
+            }
+
+            .search-group input,
+            .search-group select {
+                padding: 10px 12px;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                font-size: 14px;
+                transition: border-color 0.3s;
+            }
+
+            .search-group input:focus,
+            .search-group select:focus {
+                border-color: #4285f4;
+                outline: none;
+                box-shadow: 0 0 0 2px rgba(66, 133, 244, 0.2);
+            }
+
+            .search-actions {
+                display: flex;
+                gap: 12px;
+                margin-top: 16px;
+            }
+
+            .search-button,
+            .reset-button {
+                padding: 10px 20px;
+                border: none;
+                border-radius: 4px;
+                font-weight: 500;
+                cursor: pointer;
+                transition: all 0.2s;
+            }
+
+            .search-button {
+                background-color: #4285f4;
+                color: white;
+            }
+
+            .search-button:hover {
+                background-color: #3367d6;
+            }
+
+            .reset-button {
+                background-color: #f1f1f1;
+                color: #555;
+            }
+
+            .reset-button:hover {
+                background-color: #e0e0e0;
+            }
+
+            .result-filters {
+                margin-top: 12px;
+                display: flex;
+                flex-wrap: wrap;
+                gap: 8px;
+                align-items: center;
+            }
+
+            .filter-tag {
+                background-color: #e8f0fe;
+                color: #1967d2;
+                padding: 4px 10px;
+                border-radius: 16px;
+                font-size: 13px;
+                display: inline-flex;
+                align-items: center;
+            }
+
+            .limit-warning {
+                color: #d93025;
+                font-size: 14px;
+                margin-left: 8px;
+            }
+
+            @media (max-width: 768px) {
+                .search-conditions {
+                    grid-template-columns: 1fr;
+                }
+            }
+        </style>
         <script>
+            // 之前的JavaScript代码保持不变
             function formatTimestamp(timestamp) {
-                return timestamp.slice(0, 23); // 只保留到微秒
+                return timestamp.slice(0, 23);
             }
             function toggleLogBody(id) {
                 const body = document.getElementById(id);
@@ -38,7 +140,6 @@
                 }
             }
 
-            // 页面加载时自动折叠所有日志内容和标签
             document.addEventListener("DOMContentLoaded", function () {
                 const logBodies = document.querySelectorAll(".log-body");
                 const logLabels = document.querySelectorAll(".log-labels");
@@ -50,16 +151,32 @@
                     labels.classList.add("collapsed");
                 });
 
-                // 处理时间戳
                 const timestamps = document.querySelectorAll(
                     ".timeline-timestamp",
                 );
                 timestamps.forEach(function (element) {
                     const originalTime = element.textContent.trim();
                     element.textContent = formatTimestamp(originalTime);
-                    // 添加完整时间戳作为悬停提示
                     element.title = originalTime;
                 });
+
+                // 设置默认时间范围（最近1小时）UTC+8
+                const now = new Date();
+                const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+
+                // 转换为本地时间字符串（UTC+8）
+                function toLocalISOString(date) {
+                    const offset = date.getTimezoneOffset();
+                    const localTime = new Date(
+                        date.getTime() - offset * 60 * 1000,
+                    );
+                    return localTime.toISOString().slice(0, 16);
+                }
+
+                document.getElementById("start_time").value =
+                    toLocalISOString(oneHourAgo);
+                document.getElementById("end_time").value =
+                    toLocalISOString(now);
             });
         </script>
     </head>
@@ -67,28 +184,85 @@
         <div class="container">
             <header class="header">
                 <h1>LogTraceFinder</h1>
-                <p class="subtitle">通过TraceID查询相关日志</p>
+                <p class="subtitle">开发平台日志查询自助工具</p>
             </header>
 
             <form method="POST" class="search-form">
-                <div class="search-box">
-                    <input
-                        type="text"
-                        name="trace_id"
-                        value="{{ trace_id }}"
-                        placeholder="输入TraceID"
-                        required
-                    />
-                    <button type="submit">查询</button>
+                <div class="search-conditions">
+                    <!-- companyId 查询 -->
+                    <div class="search-group">
+                        <label for="company_id">公司ID</label>
+                        <input
+                            type="text"
+                            id="company_id"
+                            name="company_id"
+                            value="{{ company_id }}"
+                            placeholder="输入公司ID"
+                        />
+                    </div>
+
+                    <!-- 日志内容关键词 -->
+                    <div class="search-group">
+                        <label for="keyword">关键词</label>
+                        <input
+                            type="text"
+                            id="keyword"
+                            name="keyword"
+                            value="{{ keyword }}"
+                            placeholder="输入日志内容关键词"
+                        />
+                    </div>
+
+                    <!-- 接口地址 查询 -->
+                    <div class="search-group">
+                        <label for="request_uri">接口地址</label>
+                        <input
+                            type="text"
+                            id="request_uri"
+                            name="request_uri"
+                            value="{{ request_uri }}"
+                            placeholder="输入接口地址"
+                        />
+                    </div>
+
+                    <!-- 时间范围选择 -->
+                    <div class="search-group">
+                        <label for="start_time">开始时间</label>
+                        <input
+                            type="datetime-local"
+                            id="start_time"
+                            name="start_time"
+                            value="{{ start_time }}"
+                        />
+                    </div>
+
+                    <div class="search-group">
+                        <label for="end_time">结束时间</label>
+                        <input
+                            type="datetime-local"
+                            id="end_time"
+                            name="end_time"
+                            value="{{ end_time }}"
+                        />
+                    </div>
+                </div>
+
+                <div class="search-actions">
+                    <button type="submit" class="search-button">查询</button>
+                    <button type="reset" class="reset-button">重置</button>
                 </div>
             </form>
 
+            <!-- 结果部分保持不变 -->
             <div class="results">
                 {% if logs %}
                 <div class="results-header">
                     <h2>查询结果</h2>
                     <p class="result-count">
-                        共找到 {{ logs|length }} 条日志记录
+                        共找到 {{ logs|length }} 条日志记录 {% if limit_reached
+                        %}
+                        <span class="limit-warning">(已达到最大显示限制)</span>
+                        {% endif %}
                     </p>
                 </div>
 
@@ -130,7 +304,6 @@
                                 </div>
                             </div>
 
-                            <!-- 可折叠的标签区域 -->
                             {% if log.labels %}
                             <div
                                 id="labels-{{ loop.index }}"
@@ -151,7 +324,6 @@
                             </div>
                             {% endif %}
 
-                            <!-- 日志内容区域 -->
                             <div
                                 id="log-{{ loop.index }}"
                                 class="log-body collapsed"
@@ -163,7 +335,6 @@
                                 {% endif %}
                             </div>
 
-                            <!-- 更突出的TraceID显示 -->
                             <div class="log-footer">
                                 <div class="trace-id-highlight">
                                     <span class="trace-id-label">追踪ID:</span>
@@ -176,9 +347,9 @@
                     </div>
                     {% endfor %}
                 </div>
-                {% else %}
+                {% elif request.method == 'POST' %}
                 <div class="no-results">
-                    <p>没有找到日志记录，请尝试其他TraceID</p>
+                    <p>没有找到符合条件的日志记录，请尝试其他查询条件</p>
                 </div>
                 {% endif %}
             </div>

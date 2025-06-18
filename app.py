@@ -1,4 +1,5 @@
 import os
+from datetime import datetime
 
 import clickhouse_connect
 from dotenv import load_dotenv
@@ -27,16 +28,40 @@ query_log_columns = [
 ]
 
 
-@app.route("/", methods=["GET", "POST"])
+@app.route("/", methods=["GET"])
 def index():
-    trace_id = ""
+    return render_template("index.html", logs=[])
+
+
+@app.route("/", methods=["POST"])
+def search():
     logs = []
+    query_conditions = []
+    parameters = {}
 
-    if request.method == "POST":
-        trace_id = request.form.get("trace_id", trace_id)
+    # Get all form parameters
+    company_id = request.form.get("company_id")
+    request_uri = request.form.get("request_uri")
+    trace_id = request.form.get("trace_id")
+    keyword = request.form.get("keyword")
+    start_time = request.form.get("start_time")
+    end_time = request.form.get("end_time")
 
-    if trace_id:
-        query = """
+    # Check if all parameters are empty
+    if not any(
+        [
+            company_id,
+            request_uri,
+            trace_id,
+            keyword,
+            start_time,
+            end_time,
+        ]
+    ):
+        return render_template("index.html", logs=[])
+
+    # Base query
+    query = """
         SELECT
             ServiceName as "serviceName",
             Timestamp as "timestamp",
@@ -45,18 +70,81 @@ def index():
             LogAttributes as "labels",
             TraceId as "traceID"
         FROM otel_logs
-        WHERE LogAttributes['trace_id'] = %(trace_id)s
-          and (timestamp >= now() - toIntervalHour(24) AND timestamp <= now())
-        ORDER BY timestamp DESC
-        LIMIT 1000
-        """
-        parameters = {"trace_id": trace_id}
-        results = clickhouse_client.query(query, parameters=parameters)
-        logs = [
-            dict(zip(query_log_columns, row)) for row in results.result_rows
-        ]
+        WHERE 1=1
+    """
 
-    return render_template("index.html", logs=logs, trace_id=trace_id)
+    # Add time range condition (default to last 24 hours if no specific range)
+    if start_time and end_time:
+        try:
+            # Convert to ClickHouse compatible format
+            start_dt = datetime.strptime(start_time, "%Y-%m-%dT%H:%M").strftime(
+                "%Y-%m-%d %H:%M:%S"
+            )
+            end_dt = datetime.strptime(end_time, "%Y-%m-%dT%H:%M").strftime(
+                "%Y-%m-%d %H:%M:%S"
+            )
+
+            query_conditions.append(
+                " AND (timestamp >= parseDateTimeBestEffort(%(start_time)s) AND timestamp <= parseDateTimeBestEffort(%(end_time)s))"
+            )
+            parameters["start_time"] = start_dt
+            parameters["end_time"] = end_dt
+        except ValueError:
+            # Fallback to default time range if parsing fails
+            query_conditions.append(
+                " AND (timestamp >= now() - toIntervalHour(1) AND timestamp <= now())"
+            )
+    else:
+        query_conditions.append(
+            " AND (timestamp >= now() - toIntervalHour(1) AND timestamp <= now())"
+        )
+
+    # Add other conditions if provided
+    if trace_id:
+        query_conditions.append(" AND LogAttributes['trace_id'] = %(trace_id)s")
+        parameters["trace_id"] = trace_id
+
+    if company_id:
+        query_conditions.append(
+            " AND LogAttributes['company_id'] = %(company_id)s"
+        )
+        parameters["company_id"] = company_id
+
+    if request_uri:
+        query_conditions.append(" AND LogAttributes['uri'] = %(request_uri)s")
+        parameters["request_uri"] = request_uri
+
+    if keyword:
+        query_conditions.append(
+            " AND Body LIKE concat('%%', %(keyword)s, '%%') "
+        )
+        parameters["keyword"] = keyword
+
+    # Service name condition (as per original query)
+    query_conditions.append(" AND ServiceName = 'standard-out-api'")
+
+    # Build final query
+    query += "".join(query_conditions)
+    query += (
+        " ORDER BY `ServiceName`,`TimestampTime`,`Timestamp` DESC LIMIT 100"
+    )
+
+    # print("Final Query:", query)
+    # print("Parameters:", parameters)
+    # Execute query
+    results = clickhouse_client.query(query, parameters=parameters)
+    logs = [dict(zip(query_log_columns, row)) for row in results.result_rows]
+
+    return render_template(
+        "index.html",
+        logs=logs,
+        company_id=company_id,
+        request_uri=request_uri,
+        trace_id=trace_id,
+        keyword=keyword,
+        start_time=start_time,
+        end_time=end_time,
+    )
 
 
 if __name__ == "__main__":
