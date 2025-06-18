@@ -77,15 +77,13 @@ def search():
     if start_time and end_time:
         try:
             # Convert to ClickHouse compatible format
-            start_dt = datetime.strptime(start_time, "%Y-%m-%dT%H:%M").strftime(
-                "%Y-%m-%d %H:%M:%S"
-            )
-            end_dt = datetime.strptime(end_time, "%Y-%m-%dT%H:%M").strftime(
-                "%Y-%m-%d %H:%M:%S"
-            )
+            start_dt = datetime.strptime(
+                start_time, "%Y-%m-%dT%H:%M"
+            ).timestamp()
+            end_dt = datetime.strptime(end_time, "%Y-%m-%dT%H:%M").timestamp()
 
             query_conditions.append(
-                " AND (timestamp >= parseDateTimeBestEffort(%(start_time)s) AND timestamp <= parseDateTimeBestEffort(%(end_time)s))"
+                " AND (timestamp >= toDateTime(%(start_time)s) AND timestamp <= toDateTime(%(end_time)s))"
             )
             parameters["start_time"] = start_dt
             parameters["end_time"] = end_dt
