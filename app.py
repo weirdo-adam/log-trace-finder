@@ -123,9 +123,6 @@ def search():
         )
         parameters["keyword"] = keyword
 
-    # Service name condition (as per original query)
-    query_conditions.append(" AND ServiceName = 'standard-out-api'")
-
     # Build final query
     query += "".join(query_conditions)
     query += " ORDER BY ServiceName DESC, TimestampTime DESC LIMIT 1000"
