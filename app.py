@@ -55,7 +55,6 @@ def search():
     parameters = {}
 
     # Get all form parameters
-    company_id = request.form.get("company_id")
     request_uri = request.form.get("request_uri")
     trace_id = request.form.get("trace_id")
     keyword = request.form.get("keyword")
@@ -65,7 +64,6 @@ def search():
     # Check if all parameters are empty
     if not any(
         [
-            company_id,
             request_uri,
             trace_id,
             keyword,
@@ -115,12 +113,6 @@ def search():
         query_conditions.append(" AND TraceId = %(trace_id)s")
         parameters["trace_id"] = trace_id
 
-    if company_id:
-        query_conditions.append(
-            " AND LogAttributes['company_id'] = %(company_id)s"
-        )
-        parameters["company_id"] = company_id
-
     if request_uri:
         query_conditions.append(" AND LogAttributes['uri'] = %(request_uri)s")
         parameters["request_uri"] = request_uri
@@ -147,7 +139,6 @@ def search():
     return render_template(
         "index.html",
         logs=logs,
-        company_id=company_id,
         request_uri=request_uri,
         trace_id=trace_id,
         keyword=keyword,
